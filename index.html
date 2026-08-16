@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Health & Life Dashboard</title>
+
+  <!-- EmailJS SDK Integration -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function () {
+      // Replace with your actual Public Key from EmailJS
+      emailjs.init("YOUR_PUBLIC_KEY");
+    })();
+  </script>
+
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-hover: #1b5e20;
+      --bg-dark: #1e293b;
+      --bg-light: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --sidebar-width: 260px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Auth Modal Overlay */
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .auth-card {
+      background-color: var(--surface);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .auth-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .auth-toggle {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .auth-toggle a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .auth-toggle a:hover {
+      text-decoration: underline;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-dark);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-links {
+      list-style: none;
+      padding: 20px 0;
+    }
+
+    .nav-links li button {
+      width: 100%;
+      padding: 14px 24px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-links li button:hover,
+    .nav-links li button.active {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-links li button.active {
+      border-left: 4px solid var(--primary);
+      color: #ffffff;
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    header.top-bar {
+      background-color: var(--surface);
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .user-badge {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background-color: var(--bg-light);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .main-content {
+      padding: 32px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* Cards & Layout */
+    .card {
+      background-color: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    /* Form Styles */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .form-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input, select, textarea, button {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    input.error-border, textarea.error-border {
+      border-color: var(--danger) !important;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.8rem;
+      display: none;
+    }
+
+    /* Honeypot field trap */
+    .hp-field {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Buttons */
+    .btn {
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:disabled {
+      background-color: #a0aec0 !important;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+
+    .btn-text-danger {
+      background-color: transparent;
+      color: var(--danger);
+      padding: 6px 10px;
+    }
+
+    .btn-text-danger:hover {
+      background-color: #fef2f2;
+    }
+
+    /* Dropdown Action Menu */
+    .dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 110%;
+      background-color: var(--surface);
+      min-width: 240px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .dropdown-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    .dropdown-menu button:hover {
+      background-color: var(--bg-light);
+      color: var(--primary);
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background-color: var(--border);
+      margin: 4px 0;
+    }
+
+    .dropdown-header-label {
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .dropdown-container:hover .dropdown-menu {
+      display: block;
+    }
+
+    /* Recipient List Badge Tags */
+    .recipient-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .recipient-chip {
+      background-color: var(--bg-light);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .recipient-chip button {
+      border: none;
+      background: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+      line-height: 1;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      font-weight: 600;
+    }
+
+    .summary-text {
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    /* Email Preview Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      padding: 24px;
+      border-radius: 8px;
+      width: 100%; max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .status-banner {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .status-banner.success {
+      background-color: #c6f6d5;
+      color: #22543d;
+      display: block;
+    }
+
+    .status-banner.error {
+      background-color: #fed7d7;
+      color: #742a2a;
+      display: block;
+    }
+
+    /* Print Specific Styles */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 1.5cm;
+      }
+
+      body {
+        background-color: #ffffff;
+        color: #000000;
+      }
+
+      .sidebar, 
+      .top-bar, 
+      .no-print,
+      .auth-overlay,
+      .modal-backdrop {
+        display: none !important;
+      }
+
+      .main-wrapper {
+        overflow: visible;
+      }
+
+      .main-content {
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .card {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+
+      th {
+        background-color: #eee !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      td, th {
+        border-bottom: 1px solid #ccc;
+      }
+
+      .print-header {
+        display: block !important;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+      }
+    }
+
+    .print-header {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Authentication Modal (Login / Register) -->
+  <div class="auth-overlay" id="auth-modal">
+    <div class="auth-card">
+      <!-- Login View -->
+      <div id="login-form-view">
+        <div class="auth-header">
+          <h2>Welcome Back</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Sign in to access your health logs</p>
+        </div>
+        <form class="form-vertical" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" required placeholder="Enter username">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required placeholder="Enter password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="padding: 12px;">Sign In</button>
+        </form>
+        <div class="auth-toggle">
+          Don't have an account? <a onclick="toggleAuthMode('register')">Register here</a>
+        </div>
+      </div>
+
+      <!-- Register View -->
+      <div id="register-form-view" style="display: none;">
+        <div class="auth-header">
+          <h2>Create Account</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Set up your local personal dashboard</p>
+        </div>
+        <form class="form-vertical" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="reg-name">Full Name</label>
+            <input type="text" id="reg-name" required placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email Address</label>
+            <input type="email" id="reg-email" required placeholder="john@example.com">
+          </div>
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <input type="text" id="reg-username" required placeholder="Choose a username">
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" required placeholder="Create a password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="padding: 12px;">Register Account</button>
+        </form>
+        <div class="auth-toggle">
+          Already have an account? <a onclick="toggleAuthMode('login')">Sign In</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      📊 Dashboard
+    </div>
+    <ul class="nav-links">
+      <li><button class="active" onclick="switchPage('food-diary', this)">🥗 Food Diary</button></li>
+      <li><button onclick="switchPage('glucose-log', this)">🩸 Blood Sugar Log</button></li>
+      <li><button onclick="switchPage('medication-log', this)">💊 Medication List</button></li>
+      <li><button onclick="switchPage('overview', this)">📈 Overview</button></li>
+      <li><button onclick="switchPage('settings', this)">⚙️ Settings</button></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <header class="top-bar">
+      <h2 id="page-title">Food Diary</h2>
+      <div class="header-controls no-print">
+        <span class="user-badge" id="current-user-badge">User: Guest</span>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print (A4)</button>
+        <button class="btn btn-secondary" onclick="handleLogout()">🚪 Logout</button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Printable Header -->
+      <div class="print-header">
+        <h1 id="print-title">Daily Summary</h1>
+        <p id="print-date-label">Date: </p>
+      </div>
+
+      <!-- Page 1: Food Diary -->
+      <section id="food-diary" class="page active">
+        <div class="card no-print">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="food-saved-days-select">Load Saved Day</label>
+              <select id="food-saved-days-select" onchange="loadSavedDay('food', this.value)">
+                <option value="">-- Select a saved day --</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px; align-self: flex-end;">
+              <button class="btn btn-secondary" onclick="saveCurrentDay('food')">💾 Save Day</button>
+              <button class="btn btn-secondary" onclick="resetForm('food')">➕ New Day</button>
+              
+              <!-- Send Email Action Dropdown -->
+              <div class="dropdown-container">
+                <button class="btn btn-primary">✉️ Send Email ▼</button>
+                <div class="dropdown-menu" id="food-email-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card no-print">
+          <div class="card-title" id="food-form-title">Add Entry</div>
+          <form id="food-entry-form" onsubmit="handleFoodFormSubmit(event)">
+            <input type="hidden" id="food-entry-id">
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="food-desc">Description</label>
+                <input type="text" id="food-desc" placeholder="e.g., Oatmeal with berries" required>
+              </div>
+              <div class="form-group">
+                <label for="food-date">Date</label>
+                <input type="date" id="food-date" required>
+              </div>
+              <div class="form-group">
+                <label for="food-time">Time</label>
+                <input type="time" id="food-time" required>
+              </div>
+              <div class="form-group">
+                <label for="food-calories">Calories</label>
+                <input type="number" id="food-calories" placeholder="350" min="0" required>
+              </div>
+              <button type="submit" class="btn btn-primary" id="food-submit-btn">Add</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Food Log Entries</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Description</th>
+                <th>Calories</th>
+                <th class="no-print" style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="food-table-body"></tbody>
+          </table>
+          <div class="table-footer">
+            <span>Total Items: <span id="food-total-count">0</span></span>
+            <span class="summary-text">Total Calories: <span id="food-total-calories">0</span> kcal</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page 2: Blood Sugar Log -->
+      <section id="glucose-log" class="page">
+        <div class="card no-print">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="glucose-saved-days-select">Load Saved Day</label>
+              <select id="glucose-saved-days-select" onchange="loadSavedDay('glucose', this.value)">
+                <option value="">-- Select a saved day --</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px; align-self: flex-end;">
+              <button class="btn btn-secondary" onclick="saveCurrentDay('glucose')">💾 Save Day</button>
+              <button class="btn btn-secondary" onclick="resetForm('glucose')">➕ New Day</button>
+              
+              <!-- Send Email Action Dropdown -->
+              <div class="dropdown-container">
+                <button class="btn btn-primary">✉️ Send Email ▼</button>
+                <div class="dropdown-menu" id="glucose-email-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card no-print">
+          <div class="card-title" id="glucose-form-title">Add Blood Sugar Reading</div>
+          <form id="glucose-entry-form" onsubmit="handleGlucoseFormSubmit(event)">
+            <input type="hidden" id="glucose-entry-id">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="glucose-date">Date</label>
+                <input type="date" id="glucose-date" required>
+              </div>
+              <div class="form-group">
+                <label for="glucose-time">Time</label>
+                <input type="time" id="glucose-time" required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="glucose-last-eaten">Last Eaten</label>
+                <input type="text" id="glucose-last-eaten" placeholder="e.g., Fasting / 2 hrs after lunch" required>
+              </div>
+              <div class="form-group">
+                <label for="glucose-reading">Reading (mmol/L)</label>
+                <input type="number" step="0.1" id="glucose-reading" placeholder="5.6" min="0" required>
+              </div>
+              <button type="submit" class="btn btn-primary" id="glucose-submit-btn">Add</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Glucose Readings</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Last Eaten</th>
+                <th>Reading (mmol/L)</th>
+                <th class="no-print" style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="glucose-table-body"></tbody>
+          </table>
+          <div class="table-footer">
+            <span>Total Readings: <span id="glucose-total-count">0</span></span>
+            <span class="summary-text">Average: <span id="glucose-avg-reading">0.0</span> mmol/L</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page 3: Medication List -->
+      <section id="medication-log" class="page">
+        <div class="card no-print">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="medication-saved-days-select">Load Saved Medication List</label>
+              <select id="medication-saved-days-select" onchange="loadSavedDay('medication', this.value)">
+                <option value="">-- Select a saved list date --</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px; align-self: flex-end;">
+              <button class="btn btn-secondary" onclick="saveCurrentDay('medication')">💾 Save List</button>
+              <button class="btn btn-secondary" onclick="resetForm('medication')">➕ Clear / New List</button>
+
+              <!-- Send Email Action Dropdown -->
+              <div class="dropdown-container">
+                <button class="btn btn-primary">✉️ Send Email ▼</button>
+                <div class="dropdown-menu" id="medication-email-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card no-print">
+          <div class="card-title" id="medication-form-title">Add Medication</div>
+          <form id="medication-entry-form" onsubmit="handleMedicationFormSubmit(event)">
+            <input type="hidden" id="medication-entry-id">
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="medication-name">Medication Name</label>
+                <input type="text" id="medication-name" placeholder="e.g., Metformin" required>
+              </div>
+              <div class="form-group">
+                <label for="medication-dosage">Dosage (mg)</label>
+                <input type="number" id="medication-dosage" placeholder="500" min="0" step="any" required>
+              </div>
+              <div class="form-group">
+                <label for="medication-frequency">How Often</label>
+                <input type="text" id="medication-frequency" placeholder="e.g., Twice daily" required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="medication-purpose">What It's For</label>
+                <input type="text" id="medication-purpose" placeholder="e.g., Diabetes management" required>
+              </div>
+              <button type="submit" class="btn btn-primary" id="medication-submit-btn">Add</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Medication Schedule</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Medication</th>
+                <th>Dosage (mg)</th>
+                <th>Frequency</th>
+                <th>Purpose</th>
+                <th class="no-print" style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="medication-table-body"></tbody>
+          </table>
+          <div class="table-footer">
+            <span>Total Medications: <span id="medication-total-count">0</span></span>
+            <span class="summary-text">Active Prescriptions</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page 4: Overview -->
+      <section id="overview" class="page">
+        <div class="card">
+          <div class="card-title">Performance Overview</div>
+          <p style="color: var(--text-muted);">Overview metrics and analytics features can be configured here.</p>
+        </div>
+      </section>
+
+      <!-- Page 5: Settings (Account & Email Management) -->
+      <section id="settings" class="page">
+        <div class="card">
+          <div class="card-title">User Profile & Account</div>
+          <form class="form-vertical" style="max-width: 500px;" onsubmit="handleUpdateProfile(event)">
+            <div class="form-group">
+              <label for="settings-name">Full Name</label>
+              <input type="text" id="settings-name" required>
+            </div>
+            <div class="form-group">
+              <label for="settings-email">Default Email Address</label>
+              <input type="email" id="settings-email" required placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+              <label for="settings-username">Username</label>
+              <input type="text" id="settings-username" disabled style="background-color: var(--bg-light); cursor: not-allowed;">
+            </div>
+            <div class="form-group">
+              <label for="settings-password">New Password</label>
+              <input type="password" id="settings-password" placeholder="Leave blank to keep current password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start; padding: 10px 20px;">Save Profile Changes</button>
+          </form>
+        </div>
+
+        <!-- EmailJS Service Credentials Configuration -->
+        <div class="card">
+          <div class="card-title">EmailJS Configuration (Serverless Direct Sending)</div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Configure your EmailJS API Service & Template IDs to send log reports directly without opening external email clients or requiring backend servers.</p>
+          <form class="form-vertical" style="max-width: 500px;" onsubmit="handleSaveEmailJSConfig(event)">
+            <div class="form-group">
+              <label for="emailjs-public-key">Public Key (User ID)</label>
+              <input type="text" id="emailjs-public-key" placeholder="YOUR_PUBLIC_KEY">
+            </div>
+            <div class="form-group">
+              <label for="emailjs-service-id">Service ID</label>
+              <input type="text" id="emailjs-service-id" placeholder="service_xxxxxxx">
+            </div>
+            <div class="form-group">
+              <label for="emailjs-template-id">Template ID</label>
+              <input type="text" id="emailjs-template-id" placeholder="template_xxxxxxx">
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start; padding: 10px 20px;">Save EmailJS Keys</button>
+          </form>
+        </div>
+
+        <!-- Saved Recipients List Management -->
+        <div class="card">
+          <div class="card-title">Saved Email Recipients</div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Add email addresses (e.g., doctor, family member, nutritionist) to quickly select them from the Send Email menu on log pages.</p>
+          <form class="form-vertical" style="max-width: 500px;" onsubmit="handleAddSavedRecipient(event)">
+            <div style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="new-recipient-label">Label/Name</label>
+                <input type="text" id="new-recipient-label" placeholder="Dr. Smith" required>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="new-recipient-email">Email Address</label>
+                <input type="email" id="new-recipient-email" placeholder="dr.smith@clinic.com" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start; padding: 10px 20px;">Add Recipient</button>
+          </form>
+          <div class="recipient-list" id="saved-recipients-container" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Pre-written Email Template Manager -->
+        <div class="card">
+          <div class="card-title">Pre-Written Email Template</div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Customize the automated body template used when emailing reports. Placeholders available: <code>{user_name}</code>, <code>{page_title}</code>, <code>{date}</code>, <code>{content_table}</code>.</p>
+          <form class="form-vertical" onsubmit="handleSaveTemplate(event)">
+            <div class="form-group">
+              <label for="template-subject">Email Subject Template</label>
+              <input type="text" id="template-subject" required placeholder="Health Report: {page_title} - {date}">
+            </div>
+            <div class="form-group">
+              <label for="template-body">Email Body Template</label>
+              <textarea id="template-body" required style="height: 140px;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start; padding: 10px 20px;">Save Template</button>
+          </form>
+        </div>
+
+        <div class="card" style="border-color: #fca5a5;">
+          <div class="card-title" style="color: var(--danger);">Account Danger Zone</div>
+          <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.9rem;">Perform account-level actions below.</p>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-secondary" onclick="handleLogout()">Logout</button>
+            <button class="btn btn-danger" onclick="handleDeleteAccount()">Delete Account</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Email Dispatch Modal with Validation, Honeypot, & Loading UI -->
+  <div id="email-preview-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.2rem;">✉️ Direct Serverless Email Dispatch</h3>
+        <button onclick="closeEmailModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+
+      <form id="email-modal-form" novalidate onsubmit="dispatchEmail(event)">
+        <!-- Honeypot anti-spam trap field -->
+        <div class="hp-field">
+          <label for="modal_website_hp">Leave this field blank</label>
+          <input type="text" id="modal_website_hp" name="modal_website_hp" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="form-vertical">
+          <div class="form-group">
+            <label for="email-to-recipient">Recipient Email</label>
+            <input type="email" id="email-to-recipient" placeholder="recipient@example.com">
+            <span class="error-msg" id="modal-recipient-error">Please enter a valid recipient email address.</span>
+          </div>
+          <div class="form-group">
+            <label for="email-preview-subject">Subject</label>
+            <input type="text" id="email-preview-subject">
+            <span class="error-msg" id="modal-subject-error">Please enter an email subject.</span>
+          </div>
+          <div class="form-group">
+            <label for="email-preview-body">Body Preview (Plain Text / HTML)</label>
+            <textarea id="email-preview-body" style="height: 180px;"></textarea>
+            <span class="error-msg" id="modal-body-error">Please enter email content (at least 5 characters).</span>
+          </div>
+
+          <div id="modal-status-banner" class="status-banner"></div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
+            <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="email-submit-btn">
+              <span id="email-btn-spinner" class="spinner" style="display: none;"></span>
+              <span id="email-btn-text">🚀 Send Email</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // App State
+    let currentUser = null;
+    let foodEntries = [];
+    let glucoseEntries = [];
+    let medicationEntries = [];
+    let activeEmailType = null;
+
+    const USERS_KEY = 'app_users_db';
+    const SESSION_KEY = 'app_active_user_session';
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const DEFAULT_TEMPLATE = {
+      subject: "Health Log Report: {page_title} ({date})",
+      body: "Hello,\n\nPlease find attached the {page_title} summary for {user_name} generated on {date}.\n\n--- SUMMARY DATA ---\n{content_table}\n\nBest regards,\n{user_name}"
+    };
+
+    window.onload = () => {
+      checkAuthSession();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toTimeString().slice(0, 5);
+      
+      document.getElementById('food-date').value = today;
+      document.getElementById('food-time').value = now;
+      document.getElementById('glucose-date').value = today;
+      document.getElementById('glucose-time').value = now;
+    };
+
+    /* ---------------- AUTH & USER MANAGEMENT ---------------- */
+    function checkAuthSession() {
+      const activeUsername = localStorage.getItem(SESSION_KEY);
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+
+      if (activeUsername && users[activeUsername]) {
+        currentUser = users[activeUsername];
+        if (!currentUser.savedRecipients) currentUser.savedRecipients = [];
+
+        document.getElementById('auth-modal').style.display = 'none';
+        document.getElementById('current-user-badge').innerText = `User: ${currentUser.name} (@${currentUser.username})`;
+        
+        // Load User Profile Settings
+        document.getElementById('settings-name').value = currentUser.name || '';
+        document.getElementById('settings-email').value = currentUser.email || '';
+        document.getElementById('settings-username').value = currentUser.username || '';
+
+        // Load EmailJS Configuration
+        const emailjsConfig = currentUser.emailjsConfig || {};
+        document.getElementById('emailjs-public-key').value = emailjsConfig.publicKey || 'YOUR_PUBLIC_KEY';
+        document.getElementById('emailjs-service-id').value = emailjsConfig.serviceId || 'YOUR_SERVICE_ID';
+        document.getElementById('emailjs-template-id').value = emailjsConfig.templateId || 'YOUR_TEMPLATE_ID';
+
+        if (emailjsConfig.publicKey && emailjsConfig.publicKey !== 'YOUR_PUBLIC_KEY') {
+          emailjs.init(emailjsConfig.publicKey);
+        }
+
+        // Load Templates & Recipients
+        const template = currentUser.emailTemplate || DEFAULT_TEMPLATE;
+        document.getElementById('template-subject').value = template.subject;
+        document.getElementById('template-body').value = template.body;
+
+        renderSavedRecipients();
+        renderAllEmailDropdowns();
+
+        // Init Logs for User
+        updateSavedDaysDropdown('food');
+        updateSavedDaysDropdown('glucose');
+        updateSavedDaysDropdown('medication');
+        renderFoodTable();
+        renderGlucoseTable();
+        renderMedicationTable();
+      } else {
+        document.getElementById('auth-modal').style.display = 'flex';
+      }
+    }
+
+    function toggleAuthMode(mode) {
+      if (mode === 'register') {
+        document.getElementById('login-form-view').style.display = 'none';
+        document.getElementById('register-form-view').style.display = 'block';
+      } else {
+        document.getElementById('login-form-view').style.display = 'block';
+        document.getElementById('register-form-view').style.display = 'none';
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const username = document.getElementById('reg-username').value.trim().toLowerCase();
+      const password = document.getElementById('reg-password').value;
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+
+      if (users[username]) {
+        alert('Username already exists. Please choose another.');
+        return;
+      }
+
+      users[username] = { 
+        name, 
+        email, 
+        username, 
+        password,
+        savedRecipients: [],
+        emailTemplate: DEFAULT_TEMPLATE,
+        emailjsConfig: { publicKey: 'YOUR_PUBLIC_KEY', serviceId: 'YOUR_SERVICE_ID', templateId: 'YOUR_TEMPLATE_ID' }
+      };
+
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      localStorage.setItem(SESSION_KEY, username);
+
+      alert('Account registered successfully!');
+      checkAuthSession();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value.trim().toLowerCase();
+      const password = document.getElementById('login-password').value;
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+
+      if (users[username] && users[username].password === password) {
+        localStorage.setItem(SESSION_KEY, username);
+        checkAuthSession();
+      } else {
+        alert('Invalid username or password.');
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem(SESSION_KEY);
+      currentUser = null;
+      location.reload();
+    }
+
+    function handleUpdateProfile(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const newName = document.getElementById('settings-name').value;
+      const newEmail = document.getElementById('settings-email').value;
+      const newPassword = document.getElementById('settings-password').value;
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      
+      users[currentUser.username].name = newName;
+      users[currentUser.username].email = newEmail;
+      if (newPassword.trim() !== '') {
+        users[currentUser.username].password = newPassword;
+      }
+
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      alert('Profile details saved!');
+      checkAuthSession();
+    }
+
+    function handleSaveEmailJSConfig(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const publicKey = document.getElementById('emailjs-public-key').value.trim();
+      const serviceId = document.getElementById('emailjs-service-id').value.trim();
+      const templateId = document.getElementById('emailjs-template-id').value.trim();
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      users[currentUser.username].emailjsConfig = { publicKey, serviceId, templateId };
+
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      if (publicKey && publicKey !== 'YOUR_PUBLIC_KEY') {
+        emailjs.init(publicKey);
+      }
+      alert('EmailJS settings saved successfully!');
+      checkAuthSession();
+    }
+
+    function handleSaveTemplate(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      users[currentUser.username].emailTemplate = {
+        subject: document.getElementById('template-subject').value,
+        body: document.getElementById('template-body').value
+      };
+
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      alert('Pre-written Email Template saved!');
+      checkAuthSession();
+    }
+
+    function handleDeleteAccount() {
+      if (!currentUser) return;
+      if (confirm(`Are you sure you want to delete account @${currentUser.username}? This cannot be undone.`)) {
+        const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+        delete users[currentUser.username];
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        handleLogout();
+      }
+    }
+
+    /* ---------------- RECIPIENTS MANAGEMENT ---------------- */
+    function handleAddSavedRecipient(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const label = document.getElementById('new-recipient-label').value.trim();
+      const email = document.getElementById('new-recipient-email').value.trim();
+
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      if (!users[currentUser.username].savedRecipients) {
+        users[currentUser.username].savedRecipients = [];
+      }
+
+      users[currentUser.username].savedRecipients.push({ id: Date.now().toString(), label, email });
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+      document.getElementById('new-recipient-label').value = '';
+      document.getElementById('new-recipient-email').value = '';
+
+      checkAuthSession();
+    }
+
+    function deleteSavedRecipient(id) {
+      if (!currentUser) return;
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+      users[currentUser.username].savedRecipients = users[currentUser.username].savedRecipients.filter(r => r.id !== id);
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      checkAuthSession();
+    }
+
+    function renderSavedRecipients() {
+      const container = document.getElementById('saved-recipients-container');
+      container.innerHTML = '';
+
+      const recipients = currentUser.savedRecipients || [];
+      if (recipients.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No additional saved recipients added yet.</span>';
+        return;
+      }
+
+      recipients.forEach(r => {
+        const chip = document.createElement('div');
+        chip.className = 'recipient-chip';
+        chip.innerHTML = `
+          <span><strong>${escapeHtml(r.label)}</strong> (${escapeHtml(r.email)})</span>
+          <button onclick="deleteSavedRecipient('${r.id}')" title="Remove">&times;</button>
+        `;
+        container.appendChild(chip);
+      });
+    }
+
+    function renderAllEmailDropdowns() {
+      ['food', 'glucose', 'medication'].forEach(type => {
+        const menu = document.getElementById(`${type}-email-dropdown`);
+        if (!menu) return;
+
+        let html = `
+          <button onclick="openEmailModal('${type}', '${currentUser.email || ''}')">Send to My Email (${escapeHtml(currentUser.email || '')})</button>
+        `;
+
+        const recipients = currentUser.savedRecipients || [];
+        if (recipients.length > 0) {
+          html += `<div class="dropdown-divider"></div>`;
+          html += `<div class="dropdown-header-label">Saved Contacts</div>`;
+          recipients.forEach(r => {
+            html += `<button onclick="openEmailModal('${type}', '${escapeHtml(r.email)}')">Send to ${escapeHtml(r.label)} (${escapeHtml(r.email)})</button>`;
+          });
+        }
+
+        html += `<div class="dropdown-divider"></div>`;
+        html += `<button onclick="openEmailModal('${type}', '')">Send to Custom Recipient...</button>`;
+
+        menu.innerHTML = html;
+      });
+    }
+
+    /* ---------------- EMAIL DISPATCH SYSTEM ---------------- */
+    function generateTableFormattedText(type) {
+      let content = "";
+      if (type === 'food') {
+        content += "Date | Time | Description | Calories\n";
+        content += "----------------------------------------\n";
+        foodEntries.forEach(item => {
+          content += `${item.date} | ${item.time} | ${item.desc} | ${item.calories} kcal\n`;
+        });
+        const totalCals = foodEntries.reduce((acc, curr) => acc + curr.calories, 0);
+        content += `\nTotal Items: ${foodEntries.length} | Total Calories: ${totalCals} kcal`;
+      } else if (type === 'glucose') {
+        content += "Date | Time | Last Eaten | Reading (mmol/L)\n";
+        content += "----------------------------------------\n";
+        let sum = 0;
+        glucoseEntries.forEach(item => {
+          sum += item.reading;
+          content += `${item.date} | ${item.time} | ${item.lastEaten} | ${item.reading} mmol/L\n`;
+        });
+        const avg = glucoseEntries.length > 0 ? (sum / glucoseEntries.length).toFixed(1) : '0.0';
+        content += `\nTotal Readings: ${glucoseEntries.length} | Average: ${avg} mmol/L`;
+      } else if (type === 'medication') {
+        content += "Medication | Dosage | Frequency | Purpose\n";
+        content += "----------------------------------------\n";
+        medicationEntries.forEach(item => {
+          content += `${item.name} | ${item.dosage} mg | ${item.frequency} | ${item.purpose}\n`;
+        });
+        content += `\nTotal Active Medications: ${medicationEntries.length}`;
+      }
+      return content;
+    }
+
+    function openEmailModal(type, targetEmail) {
+      activeEmailType = type;
+      const today = new Date().toISOString().split('T')[0];
+      const pageTitleMap = {
+        'food': 'Food Diary',
+        'glucose': 'Blood Sugar Log',
+        'medication': 'Medication List'
+      };
+
+      const template = currentUser.emailTemplate || DEFAULT_TEMPLATE;
+      const formattedTable = generateTableFormattedText(type);
+
+      const pageTitle = pageTitleMap[type];
+      const subject = template.subject
+        .replace(/{page_title}/g, pageTitle)
+        .replace(/{date}/g, today)
+        .replace(/{user_name}/g, currentUser.name);
+
+      const body = template.body
+        .replace(/{page_title}/g, pageTitle)
+        .replace(/{date}/g, today)
+        .replace(/{user_name}/g, currentUser.name)
+        .replace(/{content_table}/g, formattedTable);
+
+      document.getElementById('email-to-recipient').value = targetEmail || '';
+      document.getElementById('email-preview-subject').value = subject;
+      document.getElementById('email-preview-body').value = body;
+
+      // Reset Modal Inputs & Errors
+      resetModalErrors();
+      document.getElementById('email-preview-modal').style.display = 'flex';
+    }
+
+    function closeEmailModal() {
+      document.getElementById('email-preview-modal').style.display = 'none';
+      resetModalErrors();
+    }
+
+    function resetModalErrors() {
+      const banner = document.getElementById('modal-status-banner');
+      banner.className = 'status-banner';
+      banner.style.display = 'none';
+
+      document.querySelectorAll('#email-preview-modal .error-msg').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('#email-preview-modal input, #email-preview-modal textarea').forEach(el => el.classList.remove('error-border'));
+    }
+
+    function validateModalForm() {
+      let isValid = true;
+      resetModalErrors();
+
+      const recipient = document.getElementById('email-to-recipient');
+      const subject = document.getElementById('email-preview-subject');
+      const body = document.getElementById('email-preview-body');
+
+      if (!EMAIL_REGEX.test(recipient.value.trim())) {
+        recipient.classList.add('error-border');
+        document.getElementById('modal-recipient-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (subject.value.trim() === '') {
+        subject.classList.add('error-border');
+        document.getElementById('modal-subject-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (body.value.trim().length < 5) {
+        body.classList.add('error-border');
+        document.getElementById('modal-body-error').style.display = 'block';
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    function dispatchEmail(e) {
+      e.preventDefault();
+      const statusBanner = document.getElementById('modal-status-banner');
+
+      // Honeypot check: if bot filled hidden field, reject silently
+      const honeypotVal = document.getElementById('modal_website_hp').value;
+      if (honeypotVal !== '') {
+        console.warn('Spam submission suppressed by Honeypot.');
+        statusBanner.innerText = 'Message sent successfully!';
+        statusBanner.className = 'status-banner success';
+        setTimeout(() => closeEmailModal(), 1500);
+        return;
+      }
+
+      if (!validateModalForm()) return;
+
+      const submitBtn = document.getElementById('email-submit-btn');
+      const btnSpinner = document.getElementById('email-btn-spinner');
+      const btnText = document.getElementById('email-btn-text');
+
+      const recipient = document.getElementById('email-to-recipient').value.trim();
+      const subject = document.getElementById('email-preview-subject').value.trim();
+      const body = document.getElementById('email-preview-body').value.trim();
+
+      const emailjsConfig = currentUser.emailjsConfig || {};
+      const serviceId = emailjsConfig.serviceId || 'YOUR_SERVICE_ID';
+      const templateId = emailjsConfig.templateId || 'YOUR_TEMPLATE_ID';
+
+      // Set Loading UI
+      submitBtn.disabled = true;
+      btnSpinner.style.display = 'inline-block';
+      btnText.innerText = 'Sending...';
+
+      const templateParams = {
+        to_email: recipient,
+        from_name: currentUser ? currentUser.name : 'Health Dashboard User',
+        subject: subject,
+        message: body,
+        page_title: activeEmailType ? activeEmailType.toUpperCase() : 'Health Log'
+      };
+
+      emailjs.send(serviceId, templateId, templateParams)
+        .then(function () {
+          statusBanner.innerText = 'Email dispatched successfully!';
+          statusBanner.className = 'status-banner success';
+          setTimeout(() => {
+            closeEmailModal();
+          }, 1800);
+        }, function (error) {
+          statusBanner.innerText = 'EmailJS error: Check public key and IDs in Settings.';
+          statusBanner.className = 'status-banner error';
+          console.error('EmailJS Error:', error);
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          btnSpinner.style.display = 'none';
+          btnText.innerText = '🚀 Send Email';
+        });
+    }
+
+    /* ---------------- PAGE NAVIGATION ---------------- */
+    function switchPage(pageId, btnElement) {
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.querySelectorAll('.nav-links button').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(pageId).classList.add('active');
+      btnElement.classList.add('active');
+      
+      const titleMap = {
+        'food-diary': 'Food Diary',
+        'glucose-log': 'Blood Sugar Log',
+        'medication-log': 'Medication List',
+        'overview': 'Overview',
+        'settings': 'Settings & Account'
+      };
+      
+      document.getElementById('page-title').innerText = titleMap[pageId];
+      document.getElementById('print-title').innerText = titleMap[pageId] + " Summary";
+
+      const today = new Date().toISOString().split('T')[0];
+      if (pageId === 'food-diary') {
+        document.getElementById('print-date-label').innerText = foodEntries.length > 0 ? `Date: ${foodEntries[0].date}` : `Date: ${today}`;
+      } else if (pageId === 'glucose-log') {
+        document.getElementById('print-date-label').innerText = glucoseEntries.length > 0 ? `Date: ${glucoseEntries[0].date}` : `Date: ${today}`;
+      } else if (pageId === 'medication-log') {
+        document.getElementById('print-date-label').innerText = `Date: ${today}`;
+      }
+    }
+
+    /* ---------------- STORAGE HELPERS ---------------- */
+    function getUserStorageKey(type) {
+      if (!currentUser) return null;
+      return `${currentUser.username}_${type}_saved_days`;
+    }
+
+    function getEntriesByType(type) {
+      if (type === 'food') return foodEntries;
+      if (type === 'glucose') return glucoseEntries;
+      return medicationEntries;
+    }
+
+    function setEntriesByType(type, data) {
+      if (type === 'food') foodEntries = data;
+      else if (type === 'glucose') glucoseEntries = data;
+      else medicationEntries = data;
+    }
+
+    function saveCurrentDay(type) {
+      const entries = getEntriesByType(type);
+      const storageKey = getUserStorageKey(type);
+
+      if (!storageKey) return;
+
+      if (entries.length === 0) {
+        alert('Please add at least one entry before saving.');
+        return;
+      }
+
+      const activeDate = entries[0]?.date || new Date().toISOString().split('T')[0];
+      const savedData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      
+      savedData[activeDate] = entries;
+      localStorage.setItem(storageKey, JSON.stringify(savedData));
+
+      alert(`List for ${activeDate} saved successfully!`);
+      updateSavedDaysDropdown(type, activeDate);
+    }
+
+    function updateSavedDaysDropdown(type, selectedDate = '') {
+      const select = document.getElementById(`${type}-saved-days-select`);
+      const storageKey = getUserStorageKey(type);
+      if (!storageKey) return;
+
+      const savedData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      select.innerHTML = `<option value="">-- Select a saved ${type === 'medication' ? 'list' : 'day'} --</option>`;
+
+      Object.keys(savedData).sort().reverse().forEach(date => {
+        const option = document.createElement('option');
+        option.value = date;
+        option.innerText = date;
+        if (date === selectedDate) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function loadSavedDay(type, dateKey) {
+      if (!dateKey) return;
+      const storageKey = getUserStorageKey(type);
+      if (!storageKey) return;
+
+      const savedData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      
+      if (savedData[dateKey]) {
+        setEntriesByType(type, savedData[dateKey]);
+        if (type === 'food') {
+          renderFoodTable();
+          resetFoodFormInputs();
+        } else if (type === 'glucose') {
+          renderGlucoseTable();
+          resetGlucoseFormInputs();
+        } else {
+          renderMedicationTable();
+          resetMedicationFormInputs();
+        }
+      }
+    }
+
+    function resetForm(type) {
+      setEntriesByType(type, []);
+      document.getElementById(`${type}-saved-days-select`).value = '';
+      if (type === 'food') {
+        resetFoodFormInputs();
+        renderFoodTable();
+      } else if (type === 'glucose') {
+        resetGlucoseFormInputs();
+        renderGlucoseTable();
+      } else {
+        resetMedicationFormInputs();
+        renderMedicationTable();
+      }
+    }
+
+    /* ---------------- LOGIC HANDLERS ---------------- */
+    function handleFoodFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('food-entry-id').value;
+      const desc = document.getElementById('food-desc').value;
+      const date = document.getElementById('food-date').value;
+      const time = document.getElementById('food-time').value;
+      const calories = parseInt(document.getElementById('food-calories').value, 10);
+
+      if (id) {
+        const index = foodEntries.findIndex(item => item.id === id);
+        if (index !== -1) foodEntries[index] = { id, desc, date, time, calories };
+      } else {
+        foodEntries.push({ id: Date.now().toString(), desc, date, time, calories });
+      }
+
+      resetFoodFormInputs();
+      renderFoodTable();
+    }
+
+    function renderFoodTable() {
+      const tbody = document.getElementById('food-table-body');
+      tbody.innerHTML = '';
+      let totalCals = 0;
+
+      foodEntries.sort((a, b) => a.time.localeCompare(b.time));
+
+      foodEntries.forEach(entry => {
+        totalCals += entry.calories;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.date}</td>
+          <td>${entry.time}</td>
+          <td>${escapeHtml(entry.desc)}</td>
+          <td>${entry.calories} kcal</td>
+          <td class="no-print" style="text-align: right;">
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editFoodEntry('${entry.id}')">Edit</button>
+            <button class="btn btn-text-danger" onclick="deleteFoodEntry('${entry.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('food-total-count').innerText = foodEntries.length;
+      document.getElementById('food-total-calories').innerText = totalCals;
+    }
+
+    function editFoodEntry(id) {
+      const entry = foodEntries.find(item => item.id === id);
+      if (!entry) return;
+      document.getElementById('food-entry-id').value = entry.id;
+      document.getElementById('food-desc').value = entry.desc;
+      document.getElementById('food-date').value = entry.date;
+      document.getElementById('food-time').value = entry.time;
+      document.getElementById('food-calories').value = entry.calories;
+      document.getElementById('food-form-title').innerText = 'Edit Food Entry';
+      document.getElementById('food-submit-btn').innerText = 'Update';
+    }
+
+    function deleteFoodEntry(id) {
+      foodEntries = foodEntries.filter(item => item.id !== id);
+      renderFoodTable();
+    }
+
+    function resetFoodFormInputs() {
+      document.getElementById('food-entry-id').value = '';
+      document.getElementById('food-desc').value = '';
+      document.getElementById('food-calories').value = '';
+      document.getElementById('food-form-title').innerText = 'Add Entry';
+      document.getElementById('food-submit-btn').innerText = 'Add';
+    }
+
+    function handleGlucoseFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('glucose-entry-id').value;
+      const date = document.getElementById('glucose-date').value;
+      const time = document.getElementById('glucose-time').value;
+      const lastEaten = document.getElementById('glucose-last-eaten').value;
+      const reading = parseFloat(document.getElementById('glucose-reading').value);
+
+      if (id) {
+        const index = glucoseEntries.findIndex(item => item.id === id);
+        if (index !== -1) glucoseEntries[index] = { id, date, time, lastEaten, reading };
+      } else {
+        glucoseEntries.push({ id: Date.now().toString(), date, time, lastEaten, reading });
+      }
+
+      resetGlucoseFormInputs();
+      renderGlucoseTable();
+    }
+
+    function renderGlucoseTable() {
+      const tbody = document.getElementById('glucose-table-body');
+      tbody.innerHTML = '';
+      let sum = 0;
+
+      glucoseEntries.sort((a, b) => a.time.localeCompare(b.time));
+
+      glucoseEntries.forEach(entry => {
+        sum += entry.reading;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.date}</td>
+          <td>${entry.time}</td>
+          <td>${escapeHtml(entry.lastEaten)}</td>
+          <td><strong>${entry.reading.toFixed(1)}</strong> mmol/L</td>
+          <td class="no-print" style="text-align: right;">
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editGlucoseEntry('${entry.id}')">Edit</button>
+            <button class="btn btn-text-danger" onclick="deleteGlucoseEntry('${entry.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const avg = glucoseEntries.length > 0 ? (sum / glucoseEntries.length).toFixed(1) : '0.0';
+      document.getElementById('glucose-total-count').innerText = glucoseEntries.length;
+      document.getElementById('glucose-avg-reading').innerText = avg;
+    }
+
+    function editGlucoseEntry(id) {
+      const entry = glucoseEntries.find(item => item.id === id);
+      if (!entry) return;
+      document.getElementById('glucose-entry-id').value = entry.id;
+      document.getElementById('glucose-date').value = entry.date;
+      document.getElementById('glucose-time').value = entry.time;
+      document.getElementById('glucose-last-eaten').value = entry.lastEaten;
+      document.getElementById('glucose-reading').value = entry.reading;
+      document.getElementById('glucose-form-title').innerText = 'Edit Blood Sugar Reading';
+      document.getElementById('glucose-submit-btn').innerText = 'Update';
+    }
+
+    function deleteGlucoseEntry(id) {
+      glucoseEntries = glucoseEntries.filter(item => item.id !== id);
+      renderGlucoseTable();
+    }
+
+    function resetGlucoseFormInputs() {
+      document.getElementById('glucose-entry-id').value = '';
+      document.getElementById('glucose-last-eaten').value = '';
+      document.getElementById('glucose-reading').value = '';
+      document.getElementById('glucose-form-title').innerText = 'Add Blood Sugar Reading';
+      document.getElementById('glucose-submit-btn').innerText = 'Add';
+    }
+
+    function handleMedicationFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('medication-entry-id').value;
+      const name = document.getElementById('medication-name').value;
+      const dosage = parseFloat(document.getElementById('medication-dosage').value);
+      const frequency = document.getElementById('medication-frequency').value;
+      const purpose = document.getElementById('medication-purpose').value;
+
+      if (id) {
+        const index = medicationEntries.findIndex(item => item.id === id);
+        if (index !== -1) medicationEntries[index] = { id, name, dosage, frequency, purpose };
+      } else {
+        medicationEntries.push({ id: Date.now().toString(), name, dosage, frequency, purpose });
+      }
+
+      resetMedicationFormInputs();
+      renderMedicationTable();
+    }
+
+    function renderMedicationTable() {
+      const tbody = document.getElementById('medication-table-body');
+      tbody.innerHTML = '';
+
+      medicationEntries.forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(entry.name)}</strong></td>
+          <td>${entry.dosage} mg</td>
+          <td>${escapeHtml(entry.frequency)}</td>
+          <td>${escapeHtml(entry.purpose)}</td>
+          <td class="no-print" style="text-align: right;">
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editMedicationEntry('${entry.id}')">Edit</button>
+            <button class="btn btn-text-danger" onclick="deleteMedicationEntry('${entry.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('medication-total-count').innerText = medicationEntries.length;
+    }
+
+    function editMedicationEntry(id) {
+      const entry = medicationEntries.find(item => item.id === id);
+      if (!entry) return;
+      document.getElementById('medication-entry-id').value = entry.id;
+      document.getElementById('medication-name').value = entry.name;
+      document.getElementById('medication-dosage').value = entry.dosage;
+      document.getElementById('medication-frequency').value = entry.frequency;
+      document.getElementById('medication-purpose').value = entry.purpose;
+      document.getElementById('medication-form-title').innerText = 'Edit Medication';
+      document.getElementById('medication-submit-btn').innerText = 'Update';
+    }
+
+    function deleteMedicationEntry(id) {
+      medicationEntries = medicationEntries.filter(item => item.id !== id);
+      renderMedicationTable();
+    }
+
+    function resetMedicationFormInputs() {
+      document.getElementById('medication-entry-id').value = '';
+      document.getElementById('medication-name').value = '';
+      document.getElementById('medication-dosage').value = '';
+      document.getElementById('medication-frequency').value = '';
+      document.getElementById('medication-purpose').value = '';
+      document.getElementById('medication-form-title').innerText = 'Add Medication';
+      document.getElementById('medication-submit-btn').innerText = 'Add';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
